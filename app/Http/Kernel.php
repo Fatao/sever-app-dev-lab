@@ -6,21 +6,47 @@ use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
 class Kernel extends HttpKernel
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Global HTTP Middleware
+    |--------------------------------------------------------------------------
+    */
+
     protected $middleware = [
-        // global middleware
+        \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
+        \Illuminate\Http\Middleware\HandleCors::class,
+        \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
+        \Illuminate\Foundation\Http\Middleware\TrimStrings::class,
+        \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
     ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Middleware Groups
+    |--------------------------------------------------------------------------
+    */
 
     protected $middlewareGroups = [
+
         'web' => [
-            // web middleware
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         ],
+
         'api' => [
-            // api middleware
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];
 
-    protected $routeMiddleware = [
-        
-         'token' => \App\Http\Middleware\TokenMiddleware::class,
+    /*
+    |--------------------------------------------------------------------------
+    | Route Middleware
+    |--------------------------------------------------------------------------
+    */
+
+    protected $middlewareAliases = [
+        'token' => \App\Http\Middleware\TokenMiddleware::class,
     ];
 }
