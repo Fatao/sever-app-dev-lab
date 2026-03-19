@@ -57,7 +57,7 @@ class AuthController extends Controller
         $user = User::where('username', $data['username'])->first();
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
-            return response()->json(['error' => 'Неверные учетные данные'], 401);
+            return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
         $authDTO = $this->tokenService->generateTokens($user);
@@ -93,7 +93,7 @@ class AuthController extends Controller
             $this->tokenService->revoke($token);
         }
 
-        return response()->json(['message' => 'Выход выполнен.'], 200);
+        return response()->json(['message' => 'Logged out.'], 200);
     }
 
     /**
@@ -104,7 +104,7 @@ class AuthController extends Controller
         $user = $request->user();
         $this->tokenService->revokeAll($user);
 
-        return response()->json(['message' => 'Выход выполнен со всех устройств.'], 200);
+        return response()->json(['message' => 'Logged out from all devices.'], 200);
     }
 
     /**
@@ -140,7 +140,7 @@ class AuthController extends Controller
         $refreshToken = $request->input('refresh_token');
 
         if (!$refreshToken) {
-            return response()->json(['error' => 'Токен обновления обязателен.'], 422);
+            return response()->json(['error' => 'Refresh token required.'], 422);
         }
 
         try {
@@ -166,7 +166,7 @@ class AuthController extends Controller
         $data = $request->validated();
 
         if (!Hash::check($data['current_password'], $user->password)) {
-            return response()->json(['error' => 'Текущий пароль неверен'], 422);
+            return response()->json(['error' => 'Current password is incorrect'], 422);
         }
 
         $user->update([
@@ -175,6 +175,6 @@ class AuthController extends Controller
 
         $this->tokenService->revokeAll($user);
 
-        return response()->json(['message' => 'Пароль успешно изменён.'], 200);
+        return response()->json(['message' => 'Password changed successfully'], 200);
     }
 }
