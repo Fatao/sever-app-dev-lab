@@ -14,6 +14,7 @@ Route::prefix('auth')->group(function () {
         Route::post('/out', [AuthController::class, 'out']);
         Route::post('/out_all', [AuthController::class, 'outAll']);
         Route::get('/tokens', [AuthController::class, 'tokens']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
     });
 
 });

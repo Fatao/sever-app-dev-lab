@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Services;
 
@@ -18,14 +19,13 @@ class TokenService implements TokenServiceInterface
 
     public function __construct()
     {
-        $this->accessTTL = env('ACCESS_TOKEN_TTL', 60);
-        $this->refreshTTL = env('REFRESH_TOKEN_TTL', 10080);
-        $this->maxActiveTokens = env('MAX_ACTIVE_TOKENS', 5);
+        $this->accessTTL       = (int) env('ACCESS_TOKEN_TTL', 60);
+        $this->refreshTTL      = (int) env('REFRESH_TOKEN_TTL', 10080);
+        $this->maxActiveTokens = (int) env('MAX_ACTIVE_TOKENS', 5);
     }
 
     public function generateTokens(User $user): AuthSuccessDTO
     {
-        // Limit active tokens
         $activeTokens = Token::where('user_id', $user->id)
             ->where('type', 'access')
             ->where('revoked', false)
@@ -33,27 +33,24 @@ class TokenService implements TokenServiceInterface
             ->get();
 
         if ($activeTokens->count() >= $this->maxActiveTokens) {
-            $oldest = $activeTokens->first();
-            $oldest->update(['revoked' => true]);
+            $activeTokens->first()->update(['revoked' => true]);
         }
 
-        // ACCESS TOKEN
         $accessToken = $this->createTokenString($user->id, 'access', $this->accessTTL);
 
         Token::create([
-            'user_id' => $user->id,
+            'user_id'    => $user->id,
             'token_hash' => hash('sha256', $accessToken),
-            'type' => 'access',
+            'type'       => 'access',
             'expires_at' => Carbon::now()->addMinutes($this->accessTTL),
         ]);
 
-        // REFRESH TOKEN
         $refreshToken = $this->createTokenString($user->id, 'refresh', $this->refreshTTL);
 
         Token::create([
-            'user_id' => $user->id,
+            'user_id'    => $user->id,
             'token_hash' => hash('sha256', $refreshToken),
-            'type' => 'refresh',
+            'type'       => 'refresh',
             'expires_at' => Carbon::now()->addMinutes($this->refreshTTL),
         ]);
 
@@ -74,11 +71,11 @@ class TokenService implements TokenServiceInterface
             ->first();
 
         if (!$tokenModel) {
-            throw new Exception('Invalid refresh token');
+            throw new Exception('Недействительный или уже использованный refresh-токен.', 401);
         }
 
         if (Carbon::now()->greaterThan($tokenModel->expires_at)) {
-            throw new Exception('Refresh token expired');
+            throw new Exception('Токен обновления истёк.', 401);
         }
 
         $tokenModel->update(['revoked' => true]);
@@ -88,9 +85,7 @@ class TokenService implements TokenServiceInterface
 
     public function revoke(string $token): void
     {
-        $tokenHash = hash('sha256', $token);
-
-        Token::where('token_hash', $tokenHash)
+        Token::where('token_hash', hash('sha256', $token))
             ->update(['revoked' => true]);
     }
 
@@ -102,9 +97,7 @@ class TokenService implements TokenServiceInterface
 
     public function validateAccessToken(string $token): ?User
     {
-        $tokenHash = hash('sha256', $token);
-
-        $tokenModel = Token::where('token_hash', $tokenHash)
+        $tokenModel = Token::where('token_hash', hash('sha256', $token))
             ->where('type', 'access')
             ->where('revoked', false)
             ->first();
@@ -123,10 +116,10 @@ class TokenService implements TokenServiceInterface
     private function createTokenString(int $userId, string $type, int $ttlMinutes): string
     {
         $payload = [
-            'uid' => $userId,
+            'uid'  => $userId,
             'type' => $type,
-            'exp' => Carbon::now()->addMinutes($ttlMinutes)->timestamp,
-            'rnd' => Str::random(16)
+            'exp'  => Carbon::now()->addMinutes($ttlMinutes)->timestamp,
+            'rnd'  => Str::random(16),
         ];
 
         return base64_encode(json_encode($payload));

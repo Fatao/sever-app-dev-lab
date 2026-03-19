@@ -6,15 +6,15 @@ namespace App\Http\Controllers;
 use App\DTO\UserDTO;
 use App\DTO\AuthSuccessDTO;
 use App\DTO\TokenListDTO;
+use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use App\Models\Token;
 use App\Services\Interfaces\TokenServiceInterface;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -22,15 +22,17 @@ class AuthController extends Controller
         private readonly TokenServiceInterface $tokenService
     ) {}
 
-    // Register a new user
+    /**
+     * Register a new user.
+     */
     public function register(RegisterRequest $request): JsonResponse
     {
-        $data = $request->validated(); // validated by FormRequest
+        $data = $request->validated();
 
-        // Create user
         $user = User::create([
             'username' => $data['username'],
-            'email' => $data['email'],
+            'name'     => $data['username'],
+            'email'    => $data['email'],
             'password' => Hash::make($data['password']),
             'birthday' => $data['birthday'],
         ]);
@@ -39,13 +41,15 @@ class AuthController extends Controller
             id: $user->id,
             username: $user->username,
             email: $user->email,
-            birthday: $user->birthday
+            birthday: $user->birthday->format('Y-m-d')
         );
 
         return response()->json($userDTO->toArray(), 201);
     }
 
-    // Login user and issue tokens
+    /**
+     * Login user and issue tokens.
+     */
     public function login(LoginRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -53,65 +57,73 @@ class AuthController extends Controller
         $user = User::where('username', $data['username'])->first();
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
-            return response()->json(['error' => 'Invalid credentials'], 401);
+            return response()->json(['error' => 'Неверные учетные данные'], 401);
         }
 
-        // Generate tokens using your TokenService
         $authDTO = $this->tokenService->generateTokens($user);
 
         return response()->json($authDTO->toArray(), 200);
     }
 
-    // Get info about current user
+    /**
+     * Get info about the currently authenticated user.
+     */
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user(); // ✅ CHANGED: method call
+        $user = $request->user();
 
         $userDTO = new UserDTO(
             id: $user->id,
             username: $user->username,
             email: $user->email,
-            birthday: $user->birthday
+            birthday: $user->birthday->format('Y-m-d')
         );
 
         return response()->json($userDTO->toArray(), 200);
     }
 
-    // Logout current token
+    /**
+     * Logout by revoking the current access token.
+     */
     public function out(Request $request): JsonResponse
     {
         $token = $request->bearerToken();
+
         if ($token) {
             $this->tokenService->revoke($token);
         }
 
-        return response()->json(['message' => 'Logged out'], 200);
+        return response()->json(['message' => 'Выход выполнен.'], 200);
     }
 
-    // Revoke all tokens of current user
+    /**
+     * Revoke all tokens of the current user.
+     */
     public function outAll(Request $request): JsonResponse
     {
-        $user = $request->user(); // ✅ CHANGED: method call
+        $user = $request->user();
         $this->tokenService->revokeAll($user);
 
-        return response()->json(['message' => 'Logged out from all devices'], 200);
+        return response()->json(['message' => 'Выход выполнен со всех устройств.'], 200);
     }
 
-    // Get active tokens metadata
+    /**
+     * Get metadata of all active tokens for the current user.
+     */
     public function tokens(Request $request): JsonResponse
     {
-        $user = $request->user(); // ✅ CHANGED: method call
+        $user = $request->user();
 
         $activeTokens = Token::where('user_id', $user->id)
             ->where('revoked', false)
             ->get()
             ->map(fn($t) => [
-                'id' => $t->id,
-                'type' => $t->type,
-                'created_at' => $t->created_at,
-                'expires_at' => $t->expires_at,
+                'id'           => $t->id,
+                'type'         => $t->type,
+                'created_at'   => $t->created_at,
+                'expires_at'   => $t->expires_at,
                 'last_used_at' => $t->last_used_at,
-                'ip_address' => $t->ip_address,
+                'ip_address'   => $t->ip_address,
             ])
             ->toArray();
 
@@ -120,27 +132,49 @@ class AuthController extends Controller
         return response()->json($dto->toArray(), 200);
     }
 
-    // Refresh access token using refresh token
+    /**
+     * Refresh access token using a valid refresh token.
+     */
     public function refresh(Request $request): JsonResponse
     {
         $refreshToken = $request->input('refresh_token');
 
         if (!$refreshToken) {
-            return response()->json(['error' => 'Refresh token required'], 422);
+            return response()->json(['error' => 'Токен обновления обязателен.'], 422);
         }
 
         try {
             $authDTO = $this->tokenService->refresh($refreshToken);
             return response()->json($authDTO->toArray(), 200);
         } catch (\Exception $e) {
-            // If token already used or invalid → revoke all tokens
             if ($e->getCode() === 401) {
-                $user = $request->user() ?? null; // ✅ CHANGED: method call
+                $user = $request->user() ?? null;
                 if ($user) {
                     $this->tokenService->revokeAll($user);
                 }
             }
             return response()->json(['error' => $e->getMessage()], 401);
         }
+    }
+
+    /**
+     * Change the authenticated user's password and revoke all tokens.
+     */
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $data = $request->validated();
+
+        if (!Hash::check($data['current_password'], $user->password)) {
+            return response()->json(['error' => 'Текущий пароль неверен'], 422);
+        }
+
+        $user->update([
+            'password' => Hash::make($data['password']),
+        ]);
+
+        $this->tokenService->revokeAll($user);
+
+        return response()->json(['message' => 'Пароль успешно изменён.'], 200);
     }
 }
