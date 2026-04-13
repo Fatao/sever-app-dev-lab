@@ -1,35 +1,41 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Http\Requests;
 
 use App\DTO\RoleDTO;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class StoreRoleRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Determine if the user is authorized.
      */
     public function authorize(): bool
     {
-        return $this->user()->hasPermission('create-role');
+        $permission = 'create-role';
+        if (!$this->user()->hasPermission($permission)) {
+            throw new AuthorizationException("Access denied. Required permission: {$permission}");
+        }
+        return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Get the validation rules.
      */
     public function rules(): array
     {
         return [
-            'name'        => ['required', 'string', 'unique:roles,name'],
-            'slug'        => ['required', 'string', 'unique:roles,slug', 'regex:/^[a-zA-Z0-9_-]+$/'],
-            'description' => ['nullable', 'string'],
+            'name'        => ['required', 'string', 'max:255', 'unique:roles,name'],
+            'slug'        => ['required', 'string', 'max:255', 'unique:roles,slug', 'regex:/^[a-zA-Z0-9_-]+$/'],
+            'description' => ['nullable', 'string', 'max:1000'],
         ];
     }
 
     /**
-     * Return a RoleDTO from validated request data.
+     * Convert request to RoleDTO.
      */
     public function toDTO(): RoleDTO
     {
@@ -40,8 +46,8 @@ class StoreRoleRequest extends FormRequest
             name: $data['name'],
             slug: $data['slug'],
             description: $data['description'] ?? null,
-            created_at: now()->format('Y-m-d H:i:s'),
-            created_by: $this->user()->id,
+            created_at: null,
+            created_by: null,
         );
     }
 }

@@ -1,9 +1,9 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\DTO\RoleDTO;
 use App\DTO\RoleCollectionDTO;
 use App\DTO\UserDTO;
 use App\Http\Requests\AttachUserRoleRequest;
@@ -17,7 +17,7 @@ use Carbon\Carbon;
 class UserRoleController extends Controller
 {
     /**
-     * Get list of all users with their roles.
+     * Get list of all users (with their roles).
      */
     public function index(Request $request): JsonResponse
     {
@@ -25,17 +25,14 @@ class UserRoleController extends Controller
             return response()->json(['error' => 'Access denied. Required permission: get-list-user'], 403);
         }
 
-        $users = User::with(['roles'])->get();
+        $users = User::with('roles')->get();
 
-        $data = $users->map(fn($user) => new UserDTO(
-            id: $user->id,
-            username: $user->username,
-            email: $user->email,
-            birthday: $user->birthday?->format('Y-m-d') ?? '',
-            roles: $user->roles->map(fn($role) => RoleDTO::fromModel($role))->toArray(),
-        ))->map(fn($dto) => $dto->toArray())->toArray();
+        $data = $users->map(fn($user) => UserDTO::fromModel($user)->toArray())->toArray();
 
-        return response()->json(['data' => $data, 'total' => count($data)], 200);
+        return response()->json([
+            'data'  => $data,
+            'total' => count($data)
+        ], 200);
     }
 
     /**
@@ -48,61 +45,51 @@ class UserRoleController extends Controller
         }
 
         $roles = $user->roles;
+        $dtos = $roles->map(fn($role) => RoleDTO::fromModel($role))->toArray();
 
-        $dto = new RoleCollectionDTO(
-            roles: $roles->map(fn($role) => RoleDTO::fromModel($role))->toArray(),
-            total: $roles->count(),
-        );
+        $collection = new RoleCollectionDTO($dtos, $roles->count());
 
-        return response()->json($dto->toArray(), 200);
+        return response()->json($collection->toArray(), 200);
     }
 
     /**
-     * Assign a role to a user.
+     * Attach a role to a user.
      */
     public function attachRole(AttachUserRoleRequest $request, User $user): JsonResponse
     {
         $roleId = $request->validated()['role_id'];
 
-        // Check if active link already exists
-        $existing = UserRole::where('user_id', $user->id)
-            ->where('role_id', $roleId)
-            ->whereNull('deleted_at')
-            ->first();
-
-        if ($existing) {
+        // Check for active assignment
+        if (UserRole::where('user_id', $user->id)
+                    ->where('role_id', $roleId)
+                    ->whereNull('deleted_at')
+                    ->exists()) {
             return response()->json(['error' => 'Role already assigned to user'], 422);
         }
 
-        // Check if soft deleted link exists — restore it
-        $softDeleted = UserRole::where('user_id', $user->id)
+        // Restore if soft deleted
+        $softDeleted = UserRole::withTrashed()
+            ->where('user_id', $user->id)
             ->where('role_id', $roleId)
             ->whereNotNull('deleted_at')
             ->first();
 
         if ($softDeleted) {
-            $softDeleted->update([
-                'deleted_at' => null,
-                'deleted_by' => null,
-                'created_by' => $request->user()->id,
-                'created_at' => Carbon::now(),
-            ]);
-
-            return response()->json(['message' => 'Role restored and assigned to user'], 200);
+            $softDeleted->restore();
+            return response()->json(['message' => 'Role assignment restored'], 200);
         }
 
+        // Create new assignment
         UserRole::create([
-            'user_id'    => $user->id,
-            'role_id'    => $roleId,
-            'created_by' => $request->user()->id,
-            'created_at' => Carbon::now(),
+            'user_id' => $user->id,
+            'role_id' => $roleId,
         ]);
 
-        return response()->json(['message' => 'Role assigned to user'], 201);
+        return response()->json(['message' => 'Role assigned successfully'], 201);
     }
 
     /**
-     * Hard delete a role from a user.
+     * Hard detach role from user.
      */
     public function detachRole(Request $request, User $user, Role $role): JsonResponse
     {
@@ -111,14 +98,14 @@ class UserRoleController extends Controller
         }
 
         UserRole::where('user_id', $user->id)
-            ->where('role_id', $role->id)
-            ->forceDelete();
+                ->where('role_id', $role->id)
+                ->forceDelete();
 
         return response()->json(['message' => 'Role permanently removed from user'], 200);
     }
 
     /**
-     * Soft delete a role from a user.
+     * Soft detach role from user.
      */
     public function softDetachRole(Request $request, User $user, Role $role): JsonResponse
     {
@@ -127,22 +114,20 @@ class UserRoleController extends Controller
         }
 
         $userRole = UserRole::where('user_id', $user->id)
-            ->where('role_id', $role->id)
-            ->whereNull('deleted_at')
-            ->first();
+                            ->where('role_id', $role->id)
+                            ->whereNull('deleted_at')
+                            ->first();
 
         if (!$userRole) {
-            return response()->json(['error' => 'Role not assigned to user'], 404);
+            return response()->json(['error' => 'No active role assignment found'], 404);
         }
 
-        $userRole->update(['deleted_by' => $request->user()->id]);
-        $userRole->delete();
-
+        $userRole->delete();   // Soft delete
         return response()->json(['message' => 'Role soft removed from user'], 200);
     }
 
     /**
-     * Restore a soft deleted role assignment.
+     * Restore soft deleted role assignment.
      */
     public function restoreRole(Request $request, User $user, Role $role): JsonResponse
     {
@@ -150,18 +135,17 @@ class UserRoleController extends Controller
             return response()->json(['error' => 'Access denied. Required permission: restore-user'], 403);
         }
 
-        $userRole = UserRole::where('user_id', $user->id)
+        $userRole = UserRole::withTrashed()
+            ->where('user_id', $user->id)
             ->where('role_id', $role->id)
             ->whereNotNull('deleted_at')
             ->first();
 
         if (!$userRole) {
-            return response()->json(['error' => 'No soft deleted role found for user'], 404);
+            return response()->json(['error' => 'No soft deleted assignment found'], 404);
         }
 
-        $userRole->update(['deleted_by' => null]);
         $userRole->restore();
-
         return response()->json(['message' => 'Role assignment restored'], 200);
     }
 }

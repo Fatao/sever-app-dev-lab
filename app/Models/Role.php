@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Models;
@@ -15,8 +16,6 @@ class Role extends Model
         'name',
         'slug',
         'description',
-        'created_by',
-        'deleted_by',
     ];
 
     protected $casts = [
@@ -24,6 +23,23 @@ class Role extends Model
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $role) {
+            $role->created_by = auth()->id() ?? 1;
+        });
+
+        static::deleting(function (self $role) {
+            if (!$role->isForceDeleting()) {
+                $role->deleted_by = auth()->id() ?? 1;
+            }
+        });
+
+        static::restoring(function (self $role) {
+            $role->deleted_by = null;
+        });
+    }
 
     /**
      * Get the permissions associated with the role.
@@ -35,7 +51,11 @@ class Role extends Model
             'permission_role',
             'role_id',
             'permission_id'
-        )->whereNull('permission_role.deleted_at');
+        )
+        ->using(PermissionRole::class)
+        ->withPivot('created_at', 'created_by', 'deleted_at', 'deleted_by')
+        ->wherePivotNull('deleted_at')
+        ->whereNull('permissions.deleted_at');
     }
 
     /**
@@ -48,6 +68,10 @@ class Role extends Model
             'role_user',
             'role_id',
             'user_id'
-        )->whereNull('role_user.deleted_at');
+        )
+        ->using(UserRole::class)
+        ->withPivot('created_at', 'created_by', 'deleted_at', 'deleted_by')
+        ->wherePivotNull('deleted_at')
+        ->whereNull('users.deleted_at');
     }
 }

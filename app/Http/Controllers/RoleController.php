@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Http\Controllers;
@@ -14,7 +15,7 @@ use Illuminate\Http\Request;
 class RoleController extends Controller
 {
     /**
-     * Get a list of all roles.
+     * Display a listing of roles.
      */
     public function index(Request $request): JsonResponse
     {
@@ -23,17 +24,15 @@ class RoleController extends Controller
         }
 
         $roles = Role::all();
+        $dtos = $roles->map(fn($role) => RoleDTO::fromModel($role))->toArray();
 
-        $dto = new RoleCollectionDTO(
-            roles: $roles->map(fn($role) => RoleDTO::fromModel($role))->toArray(),
-            total: $roles->count(),
-        );
+        $collection = new RoleCollectionDTO($dtos, $roles->count());
 
-        return response()->json($dto->toArray(), 200);
+        return response()->json($collection->toArray(), 200);
     }
 
     /**
-     * Get a specific role by ID.
+     * Display the specified role.
      */
     public function show(Request $request, Role $role): JsonResponse
     {
@@ -45,22 +44,16 @@ class RoleController extends Controller
     }
 
     /**
-     * Create a new role.
+     * Store a newly created role.
      */
     public function store(StoreRoleRequest $request): JsonResponse
     {
-        $role = Role::create([
-            'name'        => $request->validated()['name'],
-            'slug'        => $request->validated()['slug'],
-            'description' => $request->validated()['description'] ?? null,
-            'created_by'  => $request->user()->id,
-        ]);
-
+        $role = Role::create($request->toDTO()->toArray());   // Better approach
         return response()->json(RoleDTO::fromModel($role)->toArray(), 201);
     }
 
     /**
-     * Update an existing role.
+     * Update the specified role.
      */
     public function update(UpdateRoleRequest $request, Role $role): JsonResponse
     {
@@ -74,7 +67,7 @@ class RoleController extends Controller
     }
 
     /**
-     * Hard delete a role permanently.
+     * Hard delete (force delete) the role.
      */
     public function destroy(Request $request, Role $role): JsonResponse
     {
@@ -83,12 +76,11 @@ class RoleController extends Controller
         }
 
         $role->forceDelete();
-
         return response()->json(['message' => 'Role permanently deleted'], 200);
     }
 
     /**
-     * Soft delete a role.
+     * Soft delete the role.
      */
     public function softDelete(Request $request, Role $role): JsonResponse
     {
@@ -96,14 +88,12 @@ class RoleController extends Controller
             return response()->json(['error' => 'Access denied. Required permission: delete-role'], 403);
         }
 
-        $role->update(['deleted_by' => $request->user()->id]);
-        $role->delete();
-
+        $role->delete();   // Soft delete (booted() will handle deleted_by)
         return response()->json(['message' => 'Role soft deleted'], 200);
     }
 
     /**
-     * Restore a soft deleted role.
+     * Restore a soft-deleted role.
      */
     public function restore(Request $request, int $id): JsonResponse
     {
@@ -112,4 +102,8 @@ class RoleController extends Controller
         }
 
         $role = Role::withTrashed()->findOrFail($id);
-        $role->update(['deleted_by' => null]);
+        $role->restore();   // booted() will set deleted_by = null
+
+        return response()->json(RoleDTO::fromModel($role->fresh())->toArray(), 200);
+    }
+}
