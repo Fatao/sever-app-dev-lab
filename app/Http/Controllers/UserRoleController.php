@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\DTO\RoleDTO;
 use App\DTO\RoleCollectionDTO;
 use App\DTO\UserDTO;
 use App\Http\Requests\AttachUserRoleRequest;
