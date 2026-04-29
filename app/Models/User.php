@@ -19,6 +19,8 @@ class User extends Authenticatable
         'email',
         'password',
         'birthday',
+        'two_factor_enabled',
+        'remember_token',
     ];
 
     protected $hidden = [
@@ -32,6 +34,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'birthday' => 'date',
+            'two_factor_enabled' => 'boolean',  
         ];
     }
 
