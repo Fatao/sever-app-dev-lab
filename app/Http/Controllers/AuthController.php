@@ -1,8 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Hash;
 use App\DTO\UserDTO;
 use App\DTO\AuthSuccessDTO;
 use App\DTO\TokenListDTO;
@@ -14,7 +16,6 @@ use App\Models\Token;
 use App\Services\Interfaces\TokenServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -50,6 +51,9 @@ class AuthController extends Controller
     /**
      * Login user and issue tokens.
      */
+    /**
+     * Handle user login. Returns temp token if 2FA is enabled.
+     */
     public function login(LoginRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -58,6 +62,23 @@ class AuthController extends Controller
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
             return response()->json(['error' => 'Invalid credentials'], 401);
+        }
+
+        // If 2FA is enabled, return a temporary token instead
+        if ($user->two_factor_enabled) {
+            $clientSignature = hash(
+                'sha256',
+                $request->ip() . $request->userAgent() . config('app.key')
+            );
+
+            $tempToken = app(\App\Services\Interfaces\TemporaryTokenServiceInterface::class)
+                ->generate($user, $clientSignature);
+
+            return response()->json([
+                'message'    => '2FA required',
+                'temp_token' => $tempToken,
+                'expires_in' => 300,
+            ], 200);
         }
 
         $authDTO = $this->tokenService->generateTokens($user);
@@ -102,6 +123,7 @@ class AuthController extends Controller
     public function outAll(Request $request): JsonResponse
     {
         $user = $request->user();
+
         $this->tokenService->revokeAll($user);
 
         return response()->json(['message' => 'Logged out from all devices.'], 200);
@@ -117,7 +139,7 @@ class AuthController extends Controller
         $activeTokens = Token::where('user_id', $user->id)
             ->where('revoked', false)
             ->get()
-            ->map(fn($t) => [
+            ->map(fn ($t) => [
                 'id'           => $t->id,
                 'type'         => $t->type,
                 'created_at'   => $t->created_at,
@@ -145,14 +167,17 @@ class AuthController extends Controller
 
         try {
             $authDTO = $this->tokenService->refresh($refreshToken);
+
             return response()->json($authDTO->toArray(), 200);
         } catch (\Exception $e) {
             if ($e->getCode() === 401) {
                 $user = $request->user() ?? null;
+
                 if ($user) {
                     $this->tokenService->revokeAll($user);
                 }
             }
+
             return response()->json(['error' => $e->getMessage()], 401);
         }
     }
