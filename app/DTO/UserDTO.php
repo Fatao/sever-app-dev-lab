@@ -10,7 +10,7 @@ final class UserDTO
         public readonly int $id,
         public readonly string $username,
         public readonly string $email,
-        public readonly string $birthday,
+        public readonly ?string $birthday,
         public readonly array $roles = [],   // array of RoleDTO
     ) {}
 
