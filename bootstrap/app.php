@@ -13,7 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'token' => \App\Http\Middleware\TokenMiddleware::class,
+            'token'      => \App\Http\Middleware\TokenMiddleware::class,
+            'temp.token' => \App\Http\Middleware\TempTokenMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

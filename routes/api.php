@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoleController;
@@ -19,6 +20,20 @@ Route::prefix('auth')->group(function () {
         Route::post('/out_all', [AuthController::class, 'outAll']);
         Route::get('/tokens', [AuthController::class, 'tokens']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
+    });
+
+    // 2FA routes — require temporary token
+    Route::prefix('2fa')->group(function () {
+        Route::middleware('temp.token')->group(function () {
+            Route::post('/request-code', [TwoFactorController::class, 'requestCode']);
+            Route::post('/verify', [TwoFactorController::class, 'verify']);
+        });
+
+        // These require full auth token
+        Route::middleware('token')->group(function () {
+            Route::post('/toggle', [TwoFactorController::class, 'toggle']);
+            Route::get('/status', [TwoFactorController::class, 'status']);
+        });
     });
 });
 

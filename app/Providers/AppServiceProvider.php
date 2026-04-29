@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+
+use App\Services\TwoFactorService;
+use App\Services\TemporaryTokenService;
+use App\Services\Interfaces\TwoFactorServiceInterface;
+use App\Services\Interfaces\TemporaryTokenServiceInterface;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -25,7 +30,12 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(TokenServiceInterface::class, TokenService::class);
         $this->app->bind(AuditServiceInterface::class, AuditService::class);
+        $this->app->bind(TwoFactorServiceInterface::class, TwoFactorService::class);
+        $this->app->bind(TemporaryTokenServiceInterface::class, TemporaryTokenService::class);
     }
+
+
+
 
     /**
      * Bootstrap application services and register observers.
