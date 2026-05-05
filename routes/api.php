@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\GitWebhookController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\GitWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -9,11 +10,19 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UserRoleController;
 use App\Http\Controllers\ChangeLogController;
 
+<<<<<<< Updated upstream
 // Git webhook — open to all, secured by secret key
+=======
+// 🔓 Git webhook route — public endpoint (secured via secret key inside controller)
+>>>>>>> Stashed changes
 Route::prefix('hooks')->group(function () {
     Route::post('/git', GitWebhookController::class);
 });
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 // Auth routes
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
@@ -42,6 +51,7 @@ Route::prefix('auth')->group(function () {
         });
     });
 });
+
 
 // RBAC + Changelog routes
 Route::prefix('ref')->middleware('token')->group(function () {

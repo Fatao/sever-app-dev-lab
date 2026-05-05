@@ -23,6 +23,10 @@ use App\Services\Interfaces\AuditServiceInterface;
 use App\Services\Interfaces\TokenServiceInterface;
 use App\Services\TokenService;
 use Illuminate\Support\ServiceProvider;
+use App\Services\DeploymentService;
+use App\Services\DeploymentLogger;
+use App\Services\Interfaces\DeploymentServiceInterface;
+use App\Services\Interfaces\DeploymentLoggerInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,6 +39,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(AuditServiceInterface::class, AuditService::class);
         $this->app->bind(TwoFactorServiceInterface::class, TwoFactorService::class);
         $this->app->bind(TemporaryTokenServiceInterface::class, TemporaryTokenService::class);
+<<<<<<< Updated upstream
+=======
+        // Bind deployment services
+>>>>>>> Stashed changes
         $this->app->bind(DeploymentLoggerInterface::class, DeploymentLogger::class);
         $this->app->bind(DeploymentServiceInterface::class, DeploymentService::class);
     }
