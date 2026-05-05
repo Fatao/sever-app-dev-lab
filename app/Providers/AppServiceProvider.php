@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-
 use App\Services\TwoFactorService;
 use App\Services\TemporaryTokenService;
+use App\Services\DeploymentService;
+use App\Services\DeploymentLogger;
 use App\Services\Interfaces\TwoFactorServiceInterface;
 use App\Services\Interfaces\TemporaryTokenServiceInterface;
+use App\Services\Interfaces\DeploymentServiceInterface;
+use App\Services\Interfaces\DeploymentLoggerInterface;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -32,10 +35,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(AuditServiceInterface::class, AuditService::class);
         $this->app->bind(TwoFactorServiceInterface::class, TwoFactorService::class);
         $this->app->bind(TemporaryTokenServiceInterface::class, TemporaryTokenService::class);
+        $this->app->bind(DeploymentLoggerInterface::class, DeploymentLogger::class);
+        $this->app->bind(DeploymentServiceInterface::class, DeploymentService::class);
     }
-
-
-
 
     /**
      * Bootstrap application services and register observers.
