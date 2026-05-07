@@ -35,6 +35,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(AuditServiceInterface::class, AuditService::class);
         $this->app->bind(TwoFactorServiceInterface::class, TwoFactorService::class);
         $this->app->bind(TemporaryTokenServiceInterface::class, TemporaryTokenService::class);
+
+
+        // Bind deployment services
+
         $this->app->bind(DeploymentLoggerInterface::class, DeploymentLogger::class);
         $this->app->bind(DeploymentServiceInterface::class, DeploymentService::class);
     }
