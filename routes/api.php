@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\LogRequestController;
 use App\Http\Controllers\GitWebhookController;
 use App\Http\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
@@ -9,18 +10,10 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UserRoleController;
 use App\Http\Controllers\ChangeLogController;
 
-
 // Git webhook — open to all, secured by secret key
-
-// 🔓 Git webhook route — public endpoint (secured via secret key inside controller)
-
 Route::prefix('hooks')->group(function () {
     Route::post('/git', GitWebhookController::class);
 });
-
-
-
-
 
 // Auth routes
 Route::prefix('auth')->group(function () {
@@ -51,10 +44,8 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-
-// RBAC + Changelog routes
+// RBAC + Changelog + Log request routes
 Route::prefix('ref')->middleware('token')->group(function () {
-
     // User management
     Route::prefix('user')->group(function () {
         Route::get('/', [UserRoleController::class, 'index']);
@@ -94,4 +85,11 @@ Route::prefix('ref')->middleware('token')->group(function () {
 
     // Changelog undo/restore
     Route::post('/changelog/{log}/restore', [ChangeLogController::class, 'restore']);
+
+    // Log request management — admin only (prefix already under /ref and protected by token)
+    Route::prefix('log')->group(function () {
+        Route::get('/request', [LogRequestController::class, 'index']);
+        Route::get('/request/{logRequest}', [LogRequestController::class, 'show']);
+        Route::delete('/request/{logRequest}', [LogRequestController::class, 'destroy']);
+    });
 });

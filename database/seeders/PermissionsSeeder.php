@@ -29,7 +29,7 @@ class PermissionsSeeder extends Seeder
             }
         }
 
-        // Story permissions 
+        // Story permissions
         $storyPermissions = [
             ['name' => 'Get Story User',       'slug' => 'get-story-user',       'description' => 'View user change history'],
             ['name' => 'Get Story Role',       'slug' => 'get-story-role',       'description' => 'View role change history'],
@@ -37,6 +37,24 @@ class PermissionsSeeder extends Seeder
         ];
 
         foreach ($storyPermissions as $perm) {
+            Permission::firstOrCreate(
+                ['slug' => $perm['slug']],
+                [
+                    'name'        => $perm['name'],
+                    'description' => $perm['description'],
+                    'created_by'  => 1,
+                ]
+            );
+        }
+
+        // Log permissions for Lab 7
+        $logPermissions = [
+            ['name' => 'Get List Log', 'slug' => 'get-list-log', 'description' => 'View list of request logs'],
+            ['name' => 'Read Log',     'slug' => 'read-log',     'description' => 'View a specific request log'],
+            ['name' => 'Delete Log',   'slug' => 'delete-log',   'description' => 'Delete a request log'],
+        ];
+
+        foreach ($logPermissions as $perm) {
             Permission::firstOrCreate(
                 ['slug' => $perm['slug']],
                 [
