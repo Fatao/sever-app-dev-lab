@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('password');
             $table->date('birthday')->nullable();
             
-            // Important for Lab 3
+            
             $table->softDeletes();        // deleted_at column
             
             $table->rememberToken();

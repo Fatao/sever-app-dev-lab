@@ -29,7 +29,7 @@ class PermissionsSeeder extends Seeder
             }
         }
 
-        // Story permissions for Lab 4
+        // Story permissions 
         $storyPermissions = [
             ['name' => 'Get Story User',       'slug' => 'get-story-user',       'description' => 'View user change history'],
             ['name' => 'Get Story Role',       'slug' => 'get-story-role',       'description' => 'View role change history'],

@@ -40,14 +40,14 @@ class DeploymentService implements DeploymentServiceInterface
         $output = '';
 
         try {
+            // 3 — reset hard to discard any remaining changes
+            $output .= $this->runCommandSafe(['git', 'reset', '--hard', 'HEAD'], $projectPath);
+
             //  1 — stash local changes
             $output .= $this->runCommandSafe(['git', 'stash'], $projectPath);
 
             //  2 — checkout target branch
             $output .= $this->runCommandSafe(['git', 'checkout', $branch], $projectPath);
-
-            // 3 — reset hard to discard any remaining changes
-            $output .= $this->runCommandSafe(['git', 'reset', '--hard', 'HEAD'], $projectPath);
 
             // 4 — pull latest (may fail in restricted network environments)
             $output .= $this->runCommandSafe(['git', 'pull', 'origin', $branch], $projectPath);
