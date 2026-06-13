@@ -44,6 +44,7 @@ class LogRequests
             }
 
             $responseBody = null;
+            $decoded      = null;
             $content      = $response->getContent();
 
             if ($content) {
@@ -53,6 +54,10 @@ class LogRequests
                 }
             }
 
+            // Try authenticated user first, then fall back to login response body
+            $userId = $request->user()?->id
+                ?? ($request->is('api/auth/login') ? ($decoded['user']['id'] ?? null) : null);
+
             LogRequest::create([
                 'full_url'          => $request->fullUrl(),
                 'method'            => $request->method(),
@@ -60,7 +65,7 @@ class LogRequests
                 'controller_method' => $controllerMethod,
                 'request_body'      => $request->attributes->get('log_request_body'),
                 'request_headers'   => $request->attributes->get('log_request_headers'),
-                'user_id'           => $request->user()?->id,
+                'user_id'           => $userId,
                 'ip_address'        => $request->ip(),
                 'user_agent'        => $request->userAgent(),
                 'response_status'   => $response->getStatusCode(),
