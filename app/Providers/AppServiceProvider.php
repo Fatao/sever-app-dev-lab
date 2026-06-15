@@ -23,6 +23,10 @@ use App\Services\Interfaces\AuditServiceInterface;
 use App\Services\Interfaces\TokenServiceInterface;
 use App\Services\TokenService;
 use Illuminate\Support\ServiceProvider;
+use App\Services\ReportDataCollector;
+use App\Services\ReportBuilder;
+use App\Services\Interfaces\ReportDataCollectorInterface;
+use App\Services\Interfaces\ReportBuilderInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,7 +39,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(AuditServiceInterface::class, AuditService::class);
         $this->app->bind(TwoFactorServiceInterface::class, TwoFactorService::class);
         $this->app->bind(TemporaryTokenServiceInterface::class, TemporaryTokenService::class);
-
+        $this->app->bind(ReportDataCollectorInterface::class, ReportDataCollector::class);
+        $this->app->bind(ReportBuilderInterface::class, ReportBuilder::class);
 
         // Bind deployment services
 
