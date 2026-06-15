@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\LogRequestController;
 use App\Http\Controllers\GitWebhookController;
 use App\Http\Controllers\TwoFactorController;
@@ -13,6 +14,12 @@ use App\Http\Controllers\ChangeLogController;
 // Git webhook — open to all, secured by secret key
 Route::prefix('hooks')->group(function () {
     Route::post('/git', GitWebhookController::class);
+});
+
+
+
+Route::prefix('report')->middleware('token')->group(function () {
+    Route::post('/generate', [ReportController::class, 'generate']);
 });
 
 // Auth routes
@@ -86,7 +93,7 @@ Route::prefix('ref')->middleware('token')->group(function () {
     // Changelog undo/restore
     Route::post('/changelog/{log}/restore', [ChangeLogController::class, 'restore']);
 
-    // Log request management — admin only (prefix already under /ref and protected by token)
+    // Log request management — admin only 
     Route::prefix('log')->group(function () {
         Route::get('/request', [LogRequestController::class, 'index']);
         Route::get('/request/{logRequest}', [LogRequestController::class, 'show']);

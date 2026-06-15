@@ -64,5 +64,11 @@ class PermissionsSeeder extends Seeder
                 ]
             );
         }
+
+        // generate-report permission
+        Permission::firstOrCreate(
+            ['slug' => 'generate-report'],
+            ['name' => 'Generate Report', 'description' => 'Generate analytics reports', 'created_by' => 1]
+        );
     }
 }
