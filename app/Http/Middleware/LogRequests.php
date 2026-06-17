@@ -54,7 +54,7 @@ class LogRequests
                 }
             }
 
-            // Try authenticated user first, then fall back to login response body
+            // authentication user first, then fall back to login response body
             $userId = $request->user()?->id
                 ?? ($request->is('api/auth/login') ? ($decoded['user']['id'] ?? null) : null);
 
