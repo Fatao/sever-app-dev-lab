@@ -16,13 +16,13 @@ class ReportController extends Controller
     public function generate(Request $request): JsonResponse
     {
         if (!$this->hasPermission($request, 'generate-report')) {
-            return response()->json(['error' => 'Access denied. Required permission: generate-report'], 403);
+            return response()->json(['error' => 'Доступ запрещён. Требуемое разрешение: generate-report'], 403);
         }
 
         GenerateReportJob::dispatch();
 
         return response()->json([
-            'message' => 'Report generation has been queued.',
+            'message' => 'Доклад о генерации был поставлен в очередь.',
         ], 200);
     }
 
