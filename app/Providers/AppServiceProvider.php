@@ -27,6 +27,13 @@ use App\Services\ReportDataCollector;
 use App\Services\ReportBuilder;
 use App\Services\Interfaces\ReportDataCollectorInterface;
 use App\Services\Interfaces\ReportBuilderInterface;
+use App\Events\UserLoggedIn;
+use App\Events\UserUpdated;
+use App\Events\RoleAssigned;
+use App\Listeners\SendLoginNotification;
+use App\Listeners\SendUpdateNotification;
+use App\Listeners\SendRoleNotification;
+use Illuminate\Support\Facades\Event;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -56,5 +63,9 @@ class AppServiceProvider extends ServiceProvider
         User::observe(UserObserver::class);
         Role::observe(RoleObserver::class);
         Permission::observe(PermissionObserver::class);
+
+        Event::listen(UserLoggedIn::class, SendLoginNotification::class);
+        Event::listen(UserUpdated::class, SendUpdateNotification::class);
+        Event::listen(RoleAssigned::class, SendRoleNotification::class);
     }
 }

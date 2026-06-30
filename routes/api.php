@@ -10,6 +10,20 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UserRoleController;
 use App\Http\Controllers\ChangeLogController;
+use App\Http\Controllers\MessengerController;
+
+// Messenger routes
+Route::prefix('messenger')->middleware('token')->group(function () {
+    Route::get('/', [MessengerController::class, 'index']);
+    Route::get('/user', [MessengerController::class, 'userMessengers']);
+    Route::post('/{messenger}/connect', [MessengerController::class, 'connect']);
+    Route::post('/{messenger}/verify', [MessengerController::class, 'verify']);
+    Route::delete('/{userMessenger}', [MessengerController::class, 'destroy']);
+    Route::patch('/{userMessenger}/toggle', [MessengerController::class, 'toggle']);
+});
+
+// Telegram webhook - no auth
+Route::post('/messenger/webhook/report', [MessengerController::class, 'webhookReport']);
 
 // Git webhook — open to all, secured by secret key
 Route::prefix('hooks')->group(function () {
