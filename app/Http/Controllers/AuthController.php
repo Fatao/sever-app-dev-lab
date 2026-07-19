@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Hash;
+use App\Events\UserLoggedIn;
 use App\DTO\UserDTO;
 use App\DTO\AuthSuccessDTO;
 use App\DTO\TokenListDTO;
@@ -82,6 +83,8 @@ class AuthController extends Controller
         }
 
         $authDTO = $this->tokenService->generateTokens($user);
+
+        event(new UserLoggedIn($user));
 
         return response()->json($authDTO->toArray(), 200);
     }
